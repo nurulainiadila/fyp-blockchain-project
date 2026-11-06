@@ -25,14 +25,12 @@ def setup_driver():
     return driver
 
 def extract_evidence(driver, target_url, case_id):
-    """Extracts evidence from public listings without needing an account."""
     if not os.path.exists(STORAGE_VAULT):
         os.makedirs(STORAGE_VAULT)
 
     driver.get(target_url)
-    time.sleep(8) # Wait for images and text to load completely
+    time.sleep(8)
 
-    # Generic extraction that won't crash if the UI changes
     try:
         page_title = driver.title
     except Exception:

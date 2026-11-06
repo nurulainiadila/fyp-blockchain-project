@@ -1,0 +1,15 @@
+
+# Python virtual environment
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Telegram authentication and private data
+*.session
+*.session-journal
+*.session*
+*.env
+.env.*
+local_vault/
+
