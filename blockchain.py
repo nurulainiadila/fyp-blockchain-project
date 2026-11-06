@@ -4,7 +4,7 @@ from web3 import Web3
 w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:7545'))
 
 # Your exact contract address from the deployment step
-CONTRACT_ADDRESS = '0x2285B85Eb1508F3E5da827EAe2d19D548EE74330'
+CONTRACT_ADDRESS = '0x65AB8e999b0acC1381B7aE4FDb5525195Af463A9'
 
 # The ABI acts as the "menu" telling Python what functions the contract has
 CONTRACT_ABI = [
