@@ -12,6 +12,7 @@ def render_victim_portal(user):
         st.stop()
     st.title('🛡️ Victim Portal')
     st.caption('Report suspected Carousell or Telegram fraud and track your own reports.')
+    st.info('Report status: Pending → Under Investigation → Resolved. Only investigators can update it.')
     tab_submit, tab_reports = st.tabs(['Submit Fraud Report', 'My Reports'])
     with tab_submit:
         with st.form('fraud_report_form'):

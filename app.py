@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import streamlit as st
 
 from report_generator import generate_evidence_report
-from report_database import get_all_reports, get_report_evidence
+from report_database import get_all_reports, get_report_evidence, update_report_status
 
 from scraper import (
     setup_driver,
@@ -711,7 +711,31 @@ else:
                         st.write("**Incident Description:**")
                         st.write(report["description"])
                         st.write("**Submitted At:**", report["submitted_at"])
-                    
+
+                        # Only the investigator role can reach this page.
+                        status_options = ["Pending", "Under Investigation", "Resolved"]
+                        with st.form(key=f"status_form_{report['id']}"):
+                            new_status = st.selectbox(
+                                "Investigation Status",
+                                status_options,
+                                index=(status_options.index(report["status"])
+                                       if report["status"] in status_options else 0),
+                                key=f"status_select_{report['id']}",
+                            )
+                            save_status = st.form_submit_button("Save Status")
+                        if save_status:
+                            if new_status == report["status"]:
+                                st.info("Status is already up to date.")
+                            else:
+                                try:
+                                    if update_report_status(report["id"], new_status):
+                                        st.success(f"Status updated to {new_status}.")
+                                        st.rerun()
+                                    else:
+                                        st.error("Report no longer exists.")
+                                except Exception:
+                                    st.error("Unable to update report status.")
+
                         st.divider()
                         st.subheader("📁 Preserved Evidence")
 
