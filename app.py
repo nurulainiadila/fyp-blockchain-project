@@ -2,17 +2,21 @@
 import os
 import re
 import hashlib
+from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
 
 import streamlit as st
+
 from report_generator import generate_evidence_report
+from report_database import get_all_reports, get_report_evidence
 
 from scraper import (
     setup_driver,
     extract_evidence,
     generate_file_hash,
 )
+
 from blockchain import (
     w3,
     CONTRACT_ADDRESS,
@@ -262,6 +266,7 @@ div.stButton > button[kind="secondary"]:hover {
 
 PAGES = [
     "Dashboard",
+    "Victim Reports",
     "Case Management",
     "Collect Evidence",
     "Evidence Records",
@@ -576,6 +581,141 @@ if page == "Dashboard":
         "Blockchain integrity verification"
     )
 
+# ==================================================
+# VICTIM REPORTS
+# ==================================================
+
+elif page == "Victim Reports":
+
+    page_heading(
+        "Victim Reports",
+        "Review fraud reports submitted through the Victim Portal.",
+    )
+
+    try:
+        reports = get_all_reports()
+
+        total_reports = len(reports)
+
+        pending_reports = sum(
+            1 for report in reports
+            if report["status"] == "Pending"
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Total Reports", total_reports)
+
+        with col2:
+            st.metric("Pending Reports", pending_reports)
+
+        st.write("")
+
+        if not reports:
+            st.info("No victim reports have been submitted yet.")
+
+        else:
+            search = st.text_input(
+                "Search Reports",
+                placeholder="Search by Report ID or platform...",
+            )
+
+            for report in reports:
+
+                report_id = f"REPORT-{report['id']:04d}"
+
+                if (
+                    search.lower() not in report_id.lower()
+                    and search.lower() not in report["platform"].lower()
+                ):
+                    continue
+
+                with st.expander(
+                    f"📋 {report_id} — {report['platform']} — {report['status']}"
+                ):
+
+                    st.write("**Report ID:**", report_id)
+                    st.write("**Status:**", report["status"])
+                    st.write("**Platform:**", report["platform"])
+                    st.write("**Victim Name:**", report["victim_name"])
+                    st.write("**Victim Email:**", report["victim_email"])
+                    st.write("**Scam URL:**", report["scam_url"])
+                    st.write("**Incident Description:**")
+                    st.write(report["description"])
+                    st.write("**Submitted At:**", report["submitted_at"])
+                    
+                    st.divider()
+                    st.subheader("📁 Preserved Evidence")
+
+                    evidence_list = get_report_evidence(report["id"])
+
+                    if not evidence_list:
+                        st.info(
+                            "No uploaded evidence linked to this report."
+                        )
+
+                    for evidence in evidence_list:
+
+                        file_path = Path(evidence["file_path"])
+
+                        st.write(
+                            "**Original Filename:**",
+                            evidence["original_filename"]
+                        )
+
+                        st.write(
+                            "**SHA-256:**",
+                            evidence["sha256"]
+                        )
+
+                        st.write(
+                            "**Received At:**",
+                            evidence["captured_at"]
+                        )
+
+                        if not file_path.is_file():
+                            st.error("Preserved evidence file is missing.")
+                            continue
+
+                        file_bytes = file_path.read_bytes()
+
+                        current_hash = hashlib.sha256(
+                            file_bytes
+                        ).hexdigest()
+
+                        if current_hash != evidence["sha256"]:
+                            st.error(
+                                "Evidence integrity check failed! "
+                                "The file does not match its recorded hash."
+                            )
+                            continue
+
+                        st.success(
+                            "Local evidence integrity check passed."
+                        )
+
+                        if file_path.suffix.lower() in [
+                            ".png", ".jpg", ".jpeg"
+                        ]:
+                            st.image(
+                                file_bytes,
+                                caption=evidence["original_filename"],
+                                width=500
+                            )
+
+                        st.download_button(
+                            "⬇️ Download Evidence",
+                            data=file_bytes,
+                            file_name=evidence["original_filename"],
+                            key=f"download_{evidence['id']}"
+                        )
+
+    except Exception as exc:
+        st.error("Unable to load victim reports.")
+
+        with st.expander("Technical details"):
+            st.text(str(exc))
 
 # ==================================================
 # COLLECT EVIDENCE
