@@ -52,3 +52,36 @@ def save_victim_evidence(uploaded_file):
         ).isoformat(),
         "original_filename": Path(uploaded_file.name).name
     }
+
+def save_captured_evidence(source_path):
+    source_path = Path(source_path)
+
+    if not source_path.is_file():
+        raise FileNotFoundError("Captured evidence file not found.")
+
+    extension = source_path.suffix.lower()
+
+    if extension not in {".png", ".html"}:
+        raise ValueError("Unsupported captured evidence type.")
+
+    file_bytes = source_path.read_bytes()
+
+    if not file_bytes:
+        raise ValueError("Captured evidence file is empty.")
+
+    if len(file_bytes) > MAX_FILE_SIZE:
+        raise ValueError("Captured evidence exceeds 10 MB.")
+
+    EVIDENCE_FOLDER.mkdir(parents=True, exist_ok=True)
+
+    filename = f"{uuid.uuid4().hex}{extension}"
+    destination = EVIDENCE_FOLDER / filename
+
+    destination.write_bytes(file_bytes)
+
+    return {
+        "file_path": str(destination),
+        "sha256": hashlib.sha256(file_bytes).hexdigest(),
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "original_filename": source_path.name
+    }

@@ -1,5 +1,6 @@
 
 import streamlit as st
+from url_validator import validate_carousell_url
 from forensic_theme import apply_forensic_theme
 from report_database import save_report, save_report_evidence
 from victim_evidence import save_victim_evidence
@@ -81,6 +82,11 @@ with st.form("fraud_report_form"):
 
         elif not consent:
             st.error("Please confirm the declaration.")
+
+        elif platform == "Carousell" and scam_url.strip() and not validate_carousell_url(scam_url):
+            st.error(
+                "Please enter a valid Carousell HTTPS listing URL."
+            )
 
         else:
             try:
