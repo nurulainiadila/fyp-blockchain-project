@@ -262,6 +262,7 @@ div.stButton > button[kind="secondary"]:hover {
 
 PAGES = [
     "Dashboard",
+    "Case Management",
     "Collect Evidence",
     "Evidence Records",
     "Verify Evidence",
@@ -737,6 +738,76 @@ elif page == "Collect Evidence":
 
                 with st.expander("Technical details"):
                     st.text(str(exc))
+
+# ==================================================
+# CASE MANAGEMENT
+# ==================================================
+
+elif page == "Case Management":
+
+    page_heading(
+        "Case Management",
+        "View fraud investigation cases and their linked evidence.",
+    )
+
+    if not blockchain_ready():
+        st.warning(
+            "Ganache or the deployed contract is unavailable."
+        )
+
+    else:
+        records, error = load_records()
+
+        if error:
+            st.error("Unable to retrieve case records.")
+
+            with st.expander("Technical details"):
+                st.text(error)
+
+        elif not records:
+            st.info(
+                "No cases found. Collect evidence to create your first case."
+            )
+
+        else:
+            cases = {}
+
+            for record in records:
+                case_id = str(record.get("case_id", "Unknown"))
+
+                if case_id not in cases:
+                    cases[case_id] = []
+
+                cases[case_id].append(record)
+
+            st.metric("Total Cases", len(cases))
+
+            st.write("")
+
+            search_case = st.text_input(
+                "Search Cases",
+                placeholder="Enter Case ID...",
+            )
+
+            for case_id, evidence_list in cases.items():
+
+                if search_case.lower() not in case_id.lower():
+                    continue
+
+                with st.expander(
+                    f"📁 {case_id} — {len(evidence_list)} Evidence Record(s)"
+                ):
+
+                    st.write("**Case ID:**", case_id)
+                    st.write(
+                        "**Total Evidence:**",
+                        len(evidence_list),
+                    )
+
+                    st.divider()
+
+                    for record in evidence_list:
+                        show_record(record)
 
 
 # ==================================================
