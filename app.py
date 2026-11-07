@@ -6,6 +6,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import streamlit as st
+from report_generator import generate_evidence_report
 
 from scraper import (
     setup_driver,
@@ -791,8 +792,42 @@ elif page == "Evidence Records":
             if not filtered:
                 st.info("No matching evidence records.")
 
+            
             for record in filtered:
                 show_record(record)
+
+                # Generate a PDF using available blockchain metadata
+                case_id = str(record.get("case_id", "Unknown"))
+                evidence_hash = str(record.get("hash", ""))
+
+                # The current blockchain records do not necessarily
+                # contain the original URL, source or transaction hash.
+                # Do not invent these forensic details.
+                source = record.get("source") or "Not recorded"
+                target_url = record.get("target_url") or "Not recorded"
+                collection_time = record.get("timestamp") or "Not recorded"
+                transaction_hash = record.get("transaction_hash")
+
+                pdf_bytes = generate_evidence_report(
+                    case_id=case_id,
+                    source=source,
+                    target_url=target_url,
+                    evidence_hash=evidence_hash,
+                    collection_time=collection_time,
+                    verification_status="Not independently verified",
+                    transaction_hash=transaction_hash,
+                )
+
+                st.download_button(
+                    label=f"Download PDF Report — {case_id}",
+                    data=pdf_bytes,
+                    file_name=f"forensic_report_{record.get('index', 'record')}.pdf",
+                    mime="application/pdf",
+                    key=f"pdf_report_{record.get('index', evidence_hash)}",
+                )
+
+                st.write("")
+
 
 
 # ==================================================
