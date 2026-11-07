@@ -4,7 +4,9 @@ from urllib.parse import urlsplit
 from url_validator import validate_carousell_url
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-
+from pathlib import Path
+from datetime import datetime, timezone
+from html import escape
 def prepare_capture_url(url):
     url = url.strip()
 
@@ -71,3 +73,60 @@ def setup_capture_driver():
     )
 
     return webdriver.Chrome(options=options)
+
+
+def capture_test_evidence(report_id, platform, reported_url):
+    """
+    Generate a local test screenshot for a victim report.
+    Does not visit any external website.
+    """
+
+    capture_folder = Path("local_vault") / "test_captures"
+    capture_folder.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now(timezone.utc).strftime(
+        "%Y%m%d_%H%M%S"
+    )
+
+    screenshot_path = capture_folder / (
+        f"report_{report_id}_{timestamp}.png"
+    )
+
+    safe_platform = escape(platform)
+    safe_url = escape(reported_url or "No URL provided")
+
+    html_content = f"""
+    <html>
+    <body style="font-family:Arial; padding:40px;">
+        <h1>ForensicVault - Test Evidence</h1>
+        <p>Report ID: REPORT-{report_id:04d}</p>
+        <p>Platform: {safe_platform}</p>
+        <p>Reported URL: {safe_url}</p>
+        <p>Capture Type: LOCAL TEST ONLY</p>
+        <p>This is not a screenshot of the reported website.</p>
+    </body>
+    </html>
+    """
+
+    driver = None
+
+    try:
+        driver = setup_capture_driver()
+
+        driver.get("data:text/html;charset=utf-8,")
+
+        driver.execute_script(
+            "document.open();"
+            "document.write(arguments[0]);"
+            "document.close();",
+            html_content
+        )
+
+        if not driver.save_screenshot(str(screenshot_path.resolve())):
+            raise RuntimeError("Screenshot capture failed.")
+
+        return screenshot_path
+
+    finally:
+        if driver is not None:
+            driver.quit()

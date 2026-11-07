@@ -4,7 +4,8 @@ from url_validator import validate_carousell_url
 from forensic_theme import apply_forensic_theme
 from report_database import save_report, save_report_evidence
 from victim_evidence import save_victim_evidence
-
+from auto_capture import capture_test_evidence
+from victim_evidence import save_captured_evidence
 
 st.set_page_config(
     page_title="ForensicVault | Victim Portal",
@@ -136,6 +137,46 @@ with st.form("fraud_report_form"):
                             "evidence could not be preserved."
                         )
                         st.warning(str(exc))
+
+                # Automatic LOCAL TEST evidence capture
+                try:
+                    test_screenshot = capture_test_evidence(
+                        report_id=report_id,
+                        platform=platform,
+                        reported_url=scam_url.strip()
+                    )
+
+                    captured_data = save_captured_evidence(
+                        test_screenshot
+                    )
+
+                    save_report_evidence(
+                        report_id,
+                        captured_data
+                    )
+
+                    st.success(
+                        "Automatic test screenshot saved and linked!"
+                    )
+
+                    st.write(
+                        "**Test Evidence SHA-256:**",
+                        captured_data["sha256"]
+                    )
+
+                    st.warning(
+                        "This is simulated test evidence, "
+                        "NOT a capture of the reported website."
+                    )
+
+                except Exception as exc:
+                    st.warning(
+                        "Report saved, but automatic test "
+                        "capture could not be completed."
+                    )
+
+                    with st.expander("Test capture details"):
+                        st.text(str(exc))
 
                 st.info(
                     "Your report has been saved locally "
