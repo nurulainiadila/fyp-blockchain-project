@@ -39,3 +39,5 @@ scraper_backup.py
 local_vault/
 venv/
 __pycache__/
+
+.souq-venv/
